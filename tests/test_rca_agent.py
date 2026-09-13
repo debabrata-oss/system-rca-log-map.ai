@@ -119,3 +119,46 @@ def test_unknown_host_fails_before_any_api_call(mock_anthropic_cls, mock_get_hos
         investigate("nope", "what broke?")
 
     mock_anthropic_cls.assert_not_called()
+
+
+@patch("rca_log_map.rca.agent.get_host", return_value=None)
+@patch("rca_log_map.rca.agent.anthropic.Anthropic")
+def test_incomplete_submit_report_is_fed_back_for_retry(mock_anthropic_cls, mock_get_host):
+    # Regression: hit for real -- Claude's submit_rca_report call omitted
+    # "confidence"/"evidence"/"recommended_actions", which used to raise an
+    # unhandled pydantic ValidationError instead of giving the model a chance
+    # to correct itself.
+    incomplete_input = {"summary": "sshd crashed", "likely_root_cause": "OOM kill"}
+    seen_calls: list = []
+    responses = [
+        _response([_tool_use("t1", "submit_rca_report", incomplete_input)]),
+        _response([_tool_use("t2", "submit_rca_report", REPORT_INPUT)]),
+    ]
+    mock_anthropic_cls.return_value = _scripted_client(responses, seen_calls)
+
+    result = investigate("web1", "what broke?", max_iterations=6)
+
+    assert isinstance(result, InvestigationResult)
+    assert result.report.likely_root_cause == "OOM kill"
+    # the retry turn wasn't forced -- there were iterations left
+    assert seen_calls[1]["tool_choice"] == {"type": "auto"}
+    retry_message = seen_calls[1]["messages"][2]
+    assert retry_message["content"][0]["tool_use_id"] == "t1"
+    assert "Error:" in retry_message["content"][0]["content"]
+
+
+@patch("rca_log_map.rca.agent.get_host", return_value=None)
+@patch("rca_log_map.rca.agent.anthropic.Anthropic")
+def test_incomplete_submit_report_on_forced_final_turn_uses_fallback(mock_anthropic_cls, mock_get_host):
+    incomplete_input = {"summary": "sshd crashed"}
+    seen_calls: list = []
+    responses = [_response([_tool_use("t1", "submit_rca_report", incomplete_input)])]
+    mock_anthropic_cls.return_value = _scripted_client(responses, seen_calls)
+
+    result = investigate("web1", "what broke?", max_iterations=1)
+
+    assert isinstance(result, InvestigationResult)
+    assert result.report.summary == "sshd crashed"
+    assert result.report.confidence == "low"
+    assert result.report.evidence == []
+    assert result.report.recommended_actions == []

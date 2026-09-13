@@ -2,6 +2,7 @@ import os
 
 import anthropic
 import paramiko
+from pydantic import ValidationError
 
 from rca_log_map.config import get_host
 from rca_log_map.rca.schemas import InvestigationResult, RCAReport, TranscriptEvent
@@ -9,6 +10,7 @@ from rca_log_map.rca.tool_specs import LOG_TOOL_DISPATCH, LOG_TOOL_SCHEMAS, SUBM
 
 DEFAULT_MODEL = os.environ.get("RCA_ANTHROPIC_MODEL", "claude-sonnet-5")
 MAX_TOKENS = 2048
+VALID_CONFIDENCE_LEVELS = ("low", "medium", "high")
 
 SYSTEM_PROMPT_TEMPLATE = """\
 You are investigating a Linux system incident on host "{host}".
@@ -17,6 +19,31 @@ need -- and no more -- to form a confident root-cause hypothesis, then call
 submit_rca_report exactly once with your conclusion. Do not guess at a root
 cause without checking at least one relevant log source first.
 """
+
+
+def _fallback_report(host: str, tools_used: list[str], raw_input: dict) -> RCAReport:
+    """Best-effort report when the model's submit_rca_report call fails schema
+    validation on the final forced turn -- there are no iterations left to ask
+    it to retry, so this must not raise (the loop is guaranteed to return a
+    report, never crash the caller with a validation error)."""
+    confidence = raw_input.get("confidence")
+    if confidence not in VALID_CONFIDENCE_LEVELS:
+        confidence = "low"
+
+    def _as_str_list(value: object) -> list[str]:
+        return [str(v) for v in value] if isinstance(value, list) else []
+
+    return RCAReport(
+        host=host,
+        tools_used=tools_used,
+        summary=str(raw_input.get("summary", "Investigation incomplete.")),
+        likely_root_cause=str(
+            raw_input.get("likely_root_cause", "Unknown -- model did not submit a complete report.")
+        ),
+        confidence=confidence,
+        evidence=_as_str_list(raw_input.get("evidence")),
+        recommended_actions=_as_str_list(raw_input.get("recommended_actions")),
+    )
 
 
 def investigate(host: str, question: str, max_iterations: int = 6) -> InvestigationResult:
@@ -47,7 +74,17 @@ def investigate(host: str, question: str, max_iterations: int = 6) -> Investigat
             if block.type != "tool_use":
                 continue
             if block.name == "submit_rca_report":
-                report = RCAReport(host=host, tools_used=tools_used, **block.input)
+                try:
+                    report = RCAReport(host=host, tools_used=tools_used, **block.input)
+                except ValidationError as exc:
+                    if forced_final:
+                        report = _fallback_report(host, tools_used, block.input)
+                        return InvestigationResult(report=report, transcript=transcript)
+                    # Give the model a chance to correct itself with iterations left.
+                    tool_results.append(
+                        {"type": "tool_result", "tool_use_id": block.id, "content": f"Error: {exc}"}
+                    )
+                    continue
                 return InvestigationResult(report=report, transcript=transcript)
 
             tools_used.append(block.name)
