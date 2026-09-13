@@ -24,7 +24,7 @@ async function apiFetch(path, options = {}) {
 
 async function loadHosts() {
   const select = document.getElementById("host");
-  const response = await apiFetch("/api/hosts");
+  const response = await apiFetch("api/hosts");
   if (!response.ok) {
     setStatus("Failed to load hosts. Refresh to re-enter your API key.", true);
     return;
@@ -93,7 +93,7 @@ document.getElementById("investigate-form").addEventListener("submit", async (ev
   setStatus("Investigating... this can take a while.");
 
   try {
-    const response = await apiFetch("/api/investigate", {
+    const response = await apiFetch("api/investigate", {
       method: "POST",
       body: JSON.stringify({ host, question }),
     });
