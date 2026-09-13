@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "docker-expert": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/docker-expert/SKILL.md",
+      "computedHash": "14840bcfb3fad72711975c3413416779ce5b9b14517fb5e326e248314e04f4d6"
+    },
+    "fastapi-pro": {
+      "source": "sickn33/agentic-awesome-skills",
+      "sourceType": "github",
+      "skillPath": "skills/fastapi-pro/SKILL.md",
+      "computedHash": "e481a717eeca34001d4ba604fdf8ff8068c3ea63dbfba8180f501392795a2f62"
+    },
+    "kubernetes": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "kubernetes/SKILL.md",
+      "computedHash": "e60b1085b1e2397a1c7aaea75ac02d5c2eb5d7b670fc8955d22a7f204d87c3fc"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "a2750dfbaed1690da73b120254892c4f926b4576cb82eb16fc877783941fe39b"
+    }
+  }
+}

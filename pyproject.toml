@@ -1,0 +1,31 @@
+[project]
+name = "rca-log-map"
+version = "0.1.0"
+description = "Live server introspection and post-incident RCA log collection, exposed as MCP tools."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0.0",
+    "anthropic>=0.40.0",
+    "paramiko>=3.4.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.8.0",
+    "typer>=0.12.0",
+]
+
+[project.scripts]
+rca = "rca_log_map.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rca_log_map"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.6.0",
+]
