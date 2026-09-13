@@ -1,5 +1,6 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import anthropic
 from fastapi.testclient import TestClient
 
 from rca_log_map.config import HostConfig
@@ -94,6 +95,25 @@ def test_investigate_maps_known_errors_to_400_not_500(monkeypatch):
         )
     assert response.status_code == 400
     assert "unknown host" in response.json()["detail"]
+
+
+def test_investigate_maps_anthropic_api_errors_to_400_not_500(monkeypatch):
+    # Regression: hit for real against a live deployment when the configured
+    # Anthropic account had insufficient credit -- anthropic.APIError wasn't
+    # in the except tuple, so it fell through to an opaque 500.
+    monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
+
+    def raise_api_error(*args, **kwargs):
+        raise anthropic.APIConnectionError(message="credit balance too low", request=MagicMock())
+
+    with patch("rca_log_map.web.app.run_investigation", side_effect=raise_api_error):
+        response = client.post(
+            "/api/investigate",
+            headers={"X-API-Key": "secret"},
+            json={"host": "web1", "question": "what broke?"},
+        )
+    assert response.status_code == 400
+    assert "credit balance too low" in response.json()["detail"]
 
 
 def test_require_api_key_raises_when_env_var_unset(monkeypatch):

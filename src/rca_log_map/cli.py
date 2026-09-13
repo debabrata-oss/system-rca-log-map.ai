@@ -1,6 +1,7 @@
 import getpass
 import subprocess
 
+import anthropic
 import paramiko
 import typer
 
@@ -155,7 +156,7 @@ def investigate(
         result = run_investigation(host, question, max_iterations=max_iterations)
     except (
         KeyError, ValueError, FileNotFoundError, PermissionError,
-        OSError, paramiko.SSHException, RuntimeError,
+        OSError, paramiko.SSHException, RuntimeError, anthropic.APIError,
     ) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import anthropic
 import paramiko
 import uvicorn
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
@@ -52,7 +53,7 @@ def api_investigate(body: InvestigateRequest) -> InvestigationResult:
         return run_investigation(body.host, body.question, max_iterations=body.max_iterations)
     except (
         KeyError, ValueError, FileNotFoundError, PermissionError,
-        OSError, paramiko.SSHException, RuntimeError,
+        OSError, paramiko.SSHException, RuntimeError, anthropic.APIError,
     ) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
