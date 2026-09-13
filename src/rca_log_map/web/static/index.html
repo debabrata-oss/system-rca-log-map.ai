@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>system-rca-log-map</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <h1>system-rca-log-map</h1>
+
+  <form id="investigate-form">
+    <label>
+      Host
+      <select id="host" required></select>
+    </label>
+    <label>
+      What happened?
+      <textarea id="question" rows="3" placeholder="e.g. what broke between 2am and 3am?" required></textarea>
+    </label>
+    <button type="submit" id="submit-btn">Investigate</button>
+  </form>
+
+  <p id="status"></p>
+  <div id="transcript"></div>
+  <div id="report"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

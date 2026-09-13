@@ -18,6 +18,7 @@ dependencies = [
 [project.scripts]
 rca = "rca_log_map.cli:app"
 rca-mcp = "rca_log_map.mcp_server:main"
+rca-web = "rca_log_map.web.app:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -30,4 +31,5 @@ packages = ["src/rca_log_map"]
 dev = [
     "pytest>=8.0.0",
     "ruff>=0.6.0",
+    "httpx>=0.27.0",
 ]

@@ -80,11 +80,12 @@ def investigate(
 ) -> None:
     """Ask Claude to investigate an incident on a host and produce an RCA report."""
     try:
-        report = run_investigation(host, question, max_iterations=max_iterations)
+        result = run_investigation(host, question, max_iterations=max_iterations)
     except (KeyError, ValueError, FileNotFoundError, OSError, paramiko.SSHException, RuntimeError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
+    report = result.report
     typer.echo(f"Host: {report.host}")
     typer.echo(f"Summary: {report.summary}")
     typer.echo(f"Likely root cause: {report.likely_root_cause}")

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from rca_log_map.rca.agent import investigate
-from rca_log_map.rca.schemas import RCAReport
+from rca_log_map.rca.schemas import InvestigationResult
 
 REPORT_INPUT = {
     "summary": "sshd crashed",
@@ -50,12 +50,14 @@ def test_investigate_dispatches_tool_and_returns_report(mock_anthropic_cls, mock
         "rca_log_map.rca.agent.LOG_TOOL_DISPATCH",
         {"journalctl_service": MagicMock(return_value="fake log output")},
     ):
-        report = investigate("web1", "what broke?", max_iterations=6)
+        result = investigate("web1", "what broke?", max_iterations=6)
 
-    assert isinstance(report, RCAReport)
-    assert report.host == "web1"
-    assert report.likely_root_cause == "OOM kill"
-    assert report.tools_used == ["journalctl_service"]
+    assert isinstance(result, InvestigationResult)
+    assert result.report.host == "web1"
+    assert result.report.likely_root_cause == "OOM kill"
+    assert result.report.tools_used == ["journalctl_service"]
+    assert [e.type for e in result.transcript] == ["tool_call", "tool_result"]
+    assert result.transcript[1].output == "fake log output"
 
     second_call_messages = seen_calls[1]["messages"]
     tool_result_message = second_call_messages[2]
@@ -80,9 +82,10 @@ def test_tool_error_is_fed_back_not_raised(mock_anthropic_cls, mock_get_host):
     with patch.dict(
         "rca_log_map.rca.agent.LOG_TOOL_DISPATCH", {"journalctl_service": raise_value_error}
     ):
-        report = investigate("web1", "what broke?", max_iterations=6)
+        result = investigate("web1", "what broke?", max_iterations=6)
 
-    assert isinstance(report, RCAReport)
+    assert isinstance(result, InvestigationResult)
+    assert "Error:" in result.transcript[1].output
     tool_result_content = seen_calls[1]["messages"][2]["content"][0]["content"]
     assert "Error:" in tool_result_content
 
@@ -101,9 +104,9 @@ def test_forced_final_turn_uses_submit_tool_choice(mock_anthropic_cls, mock_get_
         "rca_log_map.rca.agent.LOG_TOOL_DISPATCH",
         {"journalctl_service": MagicMock(return_value="fake log output")},
     ):
-        report = investigate("web1", "what broke?", max_iterations=2)
+        result = investigate("web1", "what broke?", max_iterations=2)
 
-    assert isinstance(report, RCAReport)
+    assert isinstance(result, InvestigationResult)
     assert seen_calls[0]["tool_choice"] == {"type": "auto"}
     assert seen_calls[1]["tool_choice"] == {"type": "tool", "name": "submit_rca_report"}
 

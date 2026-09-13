@@ -4,7 +4,7 @@ import anthropic
 import paramiko
 
 from rca_log_map.config import get_host
-from rca_log_map.rca.schemas import RCAReport
+from rca_log_map.rca.schemas import InvestigationResult, RCAReport, TranscriptEvent
 from rca_log_map.rca.tool_specs import LOG_TOOL_DISPATCH, LOG_TOOL_SCHEMAS, SUBMIT_REPORT_TOOL
 
 DEFAULT_MODEL = os.environ.get("RCA_ANTHROPIC_MODEL", "claude-sonnet-5")
@@ -19,12 +19,13 @@ cause without checking at least one relevant log source first.
 """
 
 
-def investigate(host: str, question: str, max_iterations: int = 6) -> RCAReport:
+def investigate(host: str, question: str, max_iterations: int = 6) -> InvestigationResult:
     get_host(host)  # fail fast: unknown host raises before any API call
 
     client = anthropic.Anthropic()
     messages: list[dict] = [{"role": "user", "content": question}]
     tools_used: list[str] = []
+    transcript: list[TranscriptEvent] = []
     tools = [*LOG_TOOL_SCHEMAS, SUBMIT_REPORT_TOOL]
 
     for iteration in range(max_iterations):
@@ -46,13 +47,16 @@ def investigate(host: str, question: str, max_iterations: int = 6) -> RCAReport:
             if block.type != "tool_use":
                 continue
             if block.name == "submit_rca_report":
-                return RCAReport(host=host, tools_used=tools_used, **block.input)
+                report = RCAReport(host=host, tools_used=tools_used, **block.input)
+                return InvestigationResult(report=report, transcript=transcript)
 
             tools_used.append(block.name)
+            transcript.append(TranscriptEvent(type="tool_call", name=block.name, input=block.input))
             try:
                 output = LOG_TOOL_DISPATCH[block.name](host=host, **block.input)
             except (KeyError, ValueError, OSError, paramiko.SSHException) as exc:
                 output = f"Error: {exc}"
+            transcript.append(TranscriptEvent(type="tool_result", name=block.name, output=output))
             tool_results.append(
                 {"type": "tool_result", "tool_use_id": block.id, "content": output}
             )
