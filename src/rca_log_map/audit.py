@@ -42,3 +42,8 @@ def record_event(
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a") as f:
         f.write(json.dumps(entry) + "\n")
+
+
+def reject(target: str, command_name: str, error: Exception) -> None:
+    record_event(host=target, command_name=command_name, command=None, exit_status=None, error=str(error))
+    raise error

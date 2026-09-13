@@ -51,10 +51,17 @@ _PARAM_SCHEMAS: dict[str, dict[str, Any]] = {
             "description": "Day of month (1-31) for a historical sar file; omit for today's stats.",
         }
     },
+    "crictl_ps": {},
+    "crictl_logs": {
+        "container_id": {"type": "string", "description": "Container ID from crictl_ps output."},
+        "lines": LINES_PROPERTY,
+        "previous": {"type": "boolean", "description": "Logs from a previous crashed instance."},
+    },
 }
 
 _REQUIRED_PARAMS: dict[str, list[str]] = {
     "journalctl_service": ["unit"],
+    "crictl_logs": ["container_id"],
 }
 
 LOG_TOOL_DISPATCH: dict[str, Callable[..., str]] = {fn.__name__: fn for fn in log_tools.ALL_TOOLS}

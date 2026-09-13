@@ -4,24 +4,17 @@ from rca_log_map.controller.commands import COMMAND_REGISTRY
 from rca_log_map.controller.ssh_controller import SSHController
 
 
-def _reject(host: str, command_name: str, error: Exception) -> None:
-    audit.record_event(
-        host=host, command_name=command_name, command=None, exit_status=None, error=str(error)
-    )
-    raise error
-
-
 def _run(host: str, command_name: str, **params) -> str:
     if command_name not in COMMAND_REGISTRY:
-        _reject(host, command_name, KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY"))
+        audit.reject(host, command_name, KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY"))
 
     try:
         host_config = get_host(host)
     except (KeyError, FileNotFoundError) as exc:
-        _reject(host, command_name, exc)
+        audit.reject(host, command_name, exc)
 
     if not host_config.is_source_allowed(command_name):
-        _reject(
+        audit.reject(
             host,
             command_name,
             PermissionError(f"{command_name!r} is not permitted on host {host!r}"),
@@ -33,7 +26,7 @@ def _run(host: str, command_name: str, **params) -> str:
     try:
         COMMAND_REGISTRY[command_name].render(**params)
     except ValueError as exc:
-        _reject(host, command_name, exc)
+        audit.reject(host, command_name, exc)
 
     with SSHController(host, host_config) as ctl:
         result = ctl.run(command_name, **params)
@@ -100,6 +93,16 @@ def sar_stats(host: str, day: int | None = None) -> str:
     return _run(host, "sar_stats", day=day)
 
 
+def crictl_ps(host: str) -> str:
+    """List running and exited containers on a node via crictl ps -a."""
+    return _run(host, "crictl_ps")
+
+
+def crictl_logs(host: str, container_id: str, lines: int = 200, previous: bool = False) -> str:
+    """Container runtime logs for a specific container ID via crictl logs."""
+    return _run(host, "crictl_logs", container_id=container_id, lines=lines, previous=previous)
+
+
 ALL_TOOLS = (
     journalctl_recent_errors,
     journalctl_boot,
@@ -112,4 +115,6 @@ ALL_TOOLS = (
     package_log,
     web_log,
     sar_stats,
+    crictl_ps,
+    crictl_logs,
 )

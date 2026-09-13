@@ -3,6 +3,7 @@ from typing import Callable
 
 from rca_log_map.controller.validation import (
     validate_boot_offset,
+    validate_container_id,
     validate_day,
     validate_enum,
     validate_lines,
@@ -83,6 +84,17 @@ def _sar_stats(day: int | None = None) -> str:
     return f"sar -f /var/log/sa/sa{day:02d}"
 
 
+def _crictl_ps() -> str:
+    return "crictl ps -a"
+
+
+def _crictl_logs(container_id: str, lines: int = 200, previous: bool = False) -> str:
+    container_id = validate_container_id(container_id)
+    lines = validate_lines(lines)
+    flag = " -p" if previous else ""
+    return f"crictl logs --tail {lines}{flag} {container_id}"
+
+
 COMMAND_REGISTRY: dict[str, CommandSpec] = {
     "journalctl_recent_errors": CommandSpec(
         description="Most recent systemd journal entries with error context (journalctl -xe).",
@@ -127,5 +139,13 @@ COMMAND_REGISTRY: dict[str, CommandSpec] = {
     "sar_stats": CommandSpec(
         description="Historical CPU/mem/IO/net stats via sar, optionally for a given day of month.",
         render=_sar_stats,
+    ),
+    "crictl_ps": CommandSpec(
+        description="List running and exited containers on a node (crictl ps -a).",
+        render=_crictl_ps,
+    ),
+    "crictl_logs": CommandSpec(
+        description="Container runtime logs for a specific container ID (crictl logs).",
+        render=_crictl_logs,
     ),
 }

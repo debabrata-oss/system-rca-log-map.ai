@@ -1,0 +1,10 @@
+# Copy this file to config/clusters.yaml and fill in your real clusters.
+# config/clusters.yaml is gitignored -- it is the cluster allowlist and
+# references a kubeconfig, so it should never be committed.
+clusters:
+  prod:
+    kubeconfig_path: ~/.kube/prod-config
+    context: prod-cluster
+    # Optional: restrict which log sources are permitted on this cluster.
+    # Omit entirely to allow all sources (run `rca list-k8s-sources` for the full list).
+    # allowed_sources: [k8s_events, k8s_describe_pod]

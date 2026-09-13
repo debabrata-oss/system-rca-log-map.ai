@@ -2,8 +2,10 @@ import pytest
 
 from rca_log_map.controller.validation import (
     validate_boot_offset,
+    validate_container_id,
     validate_day,
     validate_enum,
+    validate_k8s_name,
     validate_lines,
     validate_since,
     validate_unit_name,
@@ -92,3 +94,25 @@ def test_validate_day_rejects_out_of_range():
         validate_day(32)
     with pytest.raises(ValueError):
         validate_day(0)
+
+
+def test_validate_container_id_accepts_hex():
+    assert validate_container_id("a" * 12) == "a" * 12
+    assert validate_container_id("0123456789abcdef") == "0123456789abcdef"
+
+
+@pytest.mark.parametrize("value", ["", "short", "not-hex-at-all", "GHIJKL01", "abc; rm -rf /"])
+def test_validate_container_id_rejects_invalid(value):
+    with pytest.raises(ValueError):
+        validate_container_id(value)
+
+
+@pytest.mark.parametrize("value", ["web1", "my-pod-abc123", "a"])
+def test_validate_k8s_name_accepts_valid_names(value):
+    assert validate_k8s_name(value, "pod") == value
+
+
+@pytest.mark.parametrize("value", ["", "Web1", "-leading-hyphen", "trailing-hyphen-", "pod; rm -rf /", "a" * 254])
+def test_validate_k8s_name_rejects_invalid_names(value):
+    with pytest.raises(ValueError):
+        validate_k8s_name(value, "pod")

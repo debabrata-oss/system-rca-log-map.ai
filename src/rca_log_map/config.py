@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field
 DEFAULT_CONFIG_PATH = Path(
     os.environ.get("RCA_HOSTS_CONFIG", Path(__file__).parents[2] / "config" / "hosts.yaml")
 )
+DEFAULT_CLUSTERS_CONFIG_PATH = Path(
+    os.environ.get("RCA_CLUSTERS_CONFIG", Path(__file__).parents[2] / "config" / "clusters.yaml")
+)
 
 
 class HostConfig(BaseModel):
@@ -39,3 +42,33 @@ def get_host(alias: str, config_path: Path | None = None) -> HostConfig:
             f"Unknown host alias {alias!r}. Known hosts: {sorted(hosts) or '(none configured)'}"
         )
     return hosts[alias]
+
+
+class ClusterConfig(BaseModel):
+    kubeconfig_path: str
+    context: str | None = None
+    allowed_sources: list[str] | None = None
+
+    def is_source_allowed(self, command_name: str) -> bool:
+        return self.allowed_sources is None or command_name in self.allowed_sources
+
+
+def load_clusters(config_path: Path | None = None) -> dict[str, ClusterConfig]:
+    path = config_path or DEFAULT_CLUSTERS_CONFIG_PATH
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Cluster inventory not found at {path}. Copy config/clusters.example.yaml to "
+            "config/clusters.yaml and fill in your clusters."
+        )
+    data = yaml.safe_load(path.read_text()) or {}
+    clusters = data.get("clusters") or {}
+    return {alias: ClusterConfig(**fields) for alias, fields in clusters.items()}
+
+
+def get_cluster(alias: str, config_path: Path | None = None) -> ClusterConfig:
+    clusters = load_clusters(config_path)
+    if alias not in clusters:
+        raise KeyError(
+            f"Unknown cluster alias {alias!r}. Known clusters: {sorted(clusters) or '(none configured)'}"
+        )
+    return clusters[alias]

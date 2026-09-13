@@ -3,7 +3,7 @@ import pytest
 from rca_log_map.controller.commands import COMMAND_REGISTRY
 
 
-def test_all_ten_standalone_sources_registered():
+def test_all_standalone_sources_registered():
     expected = {
         "journalctl_recent_errors",
         "journalctl_boot",
@@ -16,6 +16,8 @@ def test_all_ten_standalone_sources_registered():
         "package_log",
         "web_log",
         "sar_stats",
+        "crictl_ps",
+        "crictl_logs",
     }
     assert expected == set(COMMAND_REGISTRY)
 
@@ -65,3 +67,20 @@ def test_lines_param_is_clamped_not_injected():
     spec = COMMAND_REGISTRY["system_messages"]
     with pytest.raises(ValueError):
         spec.render(lines="1; cat /etc/shadow")
+
+
+def test_crictl_ps_renders_expected_command():
+    spec = COMMAND_REGISTRY["crictl_ps"]
+    assert spec.render() == "crictl ps -a"
+
+
+def test_crictl_logs_renders_expected_command():
+    spec = COMMAND_REGISTRY["crictl_logs"]
+    assert spec.render(container_id="a" * 12, lines=50) == f"crictl logs --tail 50 {'a' * 12}"
+    assert spec.render(container_id="a" * 12, lines=50, previous=True) == f"crictl logs --tail 50 -p {'a' * 12}"
+
+
+def test_crictl_logs_rejects_bad_container_id():
+    spec = COMMAND_REGISTRY["crictl_logs"]
+    with pytest.raises(ValueError):
+        spec.render(container_id="abc; rm -rf /", lines=50)

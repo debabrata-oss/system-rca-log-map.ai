@@ -68,11 +68,7 @@ class SSHController:
         except ValueError as exc:
             # Defense in depth: log_tools._run() already validates before connecting,
             # but audit this too in case SSHController is ever called directly.
-            audit.record_event(
-                host=self.host_alias, command_name=command_name, command=None,
-                exit_status=None, error=str(exc),
-            )
-            raise
+            audit.reject(self.host_alias, command_name, exc)
 
         _, stdout, stderr = self._client.exec_command(rendered, timeout=COMMAND_TIMEOUT_SECONDS)
         exit_status = stdout.channel.recv_exit_status()
