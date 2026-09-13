@@ -21,8 +21,9 @@ def _mock_client(stdout_bytes: bytes = b"log line\n", stderr_bytes: bytes = b"",
     return client
 
 
+@patch("rca_log_map.audit.record_event")
 @patch("rca_log_map.controller.ssh_controller.paramiko.SSHClient")
-def test_run_calls_exec_command_with_rendered_string(mock_ssh_client_cls):
+def test_run_calls_exec_command_with_rendered_string(mock_ssh_client_cls, mock_record_event):
     mock_ssh_client_cls.return_value = _mock_client()
 
     with SSHController("web1", HOST_CONFIG) as ctl:
@@ -33,6 +34,11 @@ def test_run_calls_exec_command_with_rendered_string(mock_ssh_client_cls):
     assert called_command == "journalctl -xe -n 50 --no-pager"
     assert result.stdout == "log line\n"
     assert result.exit_status == 0
+
+    mock_record_event.assert_called_once_with(
+        host="web1", command_name="journalctl_recent_errors",
+        command="journalctl -xe -n 50 --no-pager", exit_status=0,
+    )
 
 
 @patch("rca_log_map.controller.ssh_controller.paramiko.SSHClient")
@@ -46,8 +52,9 @@ def test_run_rejects_unknown_command_before_exec(mock_ssh_client_cls):
     mock_ssh_client_cls.return_value.exec_command.assert_not_called()
 
 
+@patch("rca_log_map.audit.record_event")
 @patch("rca_log_map.controller.ssh_controller.paramiko.SSHClient")
-def test_run_rejects_bad_params_before_exec(mock_ssh_client_cls):
+def test_run_rejects_bad_params_before_exec(mock_ssh_client_cls, mock_record_event):
     mock_ssh_client_cls.return_value = _mock_client()
 
     with SSHController("web1", HOST_CONFIG) as ctl:
@@ -55,6 +62,8 @@ def test_run_rejects_bad_params_before_exec(mock_ssh_client_cls):
             ctl.run("journalctl_service", unit="sshd; reboot", since="1 hour ago")
 
     mock_ssh_client_cls.return_value.exec_command.assert_not_called()
+    mock_record_event.assert_called_once()
+    assert mock_record_event.call_args.kwargs["error"] is not None
 
 
 @patch("rca_log_map.controller.ssh_controller.paramiko.SSHClient")

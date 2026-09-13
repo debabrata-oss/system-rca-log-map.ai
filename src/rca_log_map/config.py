@@ -14,6 +14,10 @@ class HostConfig(BaseModel):
     port: int = 22
     username: str
     key_path: str = Field(alias="key_path")
+    allowed_sources: list[str] | None = None
+
+    def is_source_allowed(self, command_name: str) -> bool:
+        return self.allowed_sources is None or command_name in self.allowed_sources
 
 
 def load_hosts(config_path: Path | None = None) -> dict[str, HostConfig]:

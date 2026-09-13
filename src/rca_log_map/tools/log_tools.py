@@ -1,17 +1,40 @@
+from rca_log_map import audit
 from rca_log_map.config import get_host
 from rca_log_map.controller.commands import COMMAND_REGISTRY
 from rca_log_map.controller.ssh_controller import SSHController
 
 
+def _reject(host: str, command_name: str, error: Exception) -> None:
+    audit.record_event(
+        host=host, command_name=command_name, command=None, exit_status=None, error=str(error)
+    )
+    raise error
+
+
 def _run(host: str, command_name: str, **params) -> str:
     if command_name not in COMMAND_REGISTRY:
-        raise KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY")
+        _reject(host, command_name, KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY"))
+
+    try:
+        host_config = get_host(host)
+    except (KeyError, FileNotFoundError) as exc:
+        _reject(host, command_name, exc)
+
+    if not host_config.is_source_allowed(command_name):
+        _reject(
+            host,
+            command_name,
+            PermissionError(f"{command_name!r} is not permitted on host {host!r}"),
+        )
+
     # Validate/render before opening any connection so bad params fail fast,
     # client-side, instead of wasting a connection attempt. SSHController.run()
     # re-validates as defense in depth.
-    COMMAND_REGISTRY[command_name].render(**params)
+    try:
+        COMMAND_REGISTRY[command_name].render(**params)
+    except ValueError as exc:
+        _reject(host, command_name, exc)
 
-    host_config = get_host(host)
     with SSHController(host, host_config) as ctl:
         result = ctl.run(command_name, **params)
     if result.exit_status != 0:

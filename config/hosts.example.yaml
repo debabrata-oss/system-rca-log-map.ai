@@ -7,3 +7,6 @@ hosts:
     port: 22
     username: rca-svc
     key_path: ~/.ssh/rca_svc_ed25519
+    # Optional: restrict which log sources are permitted on this host.
+    # Omit entirely to allow all sources (run `rca list-sources` for the full list).
+    # allowed_sources: [journalctl_recent_errors, journalctl_service, system_messages]

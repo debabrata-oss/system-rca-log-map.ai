@@ -54,7 +54,7 @@ def investigate(host: str, question: str, max_iterations: int = 6) -> Investigat
             transcript.append(TranscriptEvent(type="tool_call", name=block.name, input=block.input))
             try:
                 output = LOG_TOOL_DISPATCH[block.name](host=host, **block.input)
-            except (KeyError, ValueError, OSError, paramiko.SSHException) as exc:
+            except (KeyError, ValueError, PermissionError, OSError, paramiko.SSHException) as exc:
                 output = f"Error: {exc}"
             transcript.append(TranscriptEvent(type="tool_result", name=block.name, output=output))
             tool_results.append(

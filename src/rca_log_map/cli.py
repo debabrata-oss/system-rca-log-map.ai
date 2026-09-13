@@ -1,6 +1,9 @@
+import getpass
+
 import paramiko
 import typer
 
+from rca_log_map import audit
 from rca_log_map.config import load_hosts
 from rca_log_map.controller.commands import COMMAND_REGISTRY
 from rca_log_map.rca.agent import investigate as run_investigation
@@ -9,6 +12,11 @@ from rca_log_map.tools import log_tools
 app = typer.Typer(help="rca: collect and analyze Linux host/cluster logs for RCA.")
 
 _SOURCE_FUNCS = {fn.__name__: fn for fn in log_tools.ALL_TOOLS}
+
+
+@app.callback()
+def main_callback() -> None:
+    audit.set_actor(getpass.getuser())
 
 
 @app.command("list-sources")
@@ -65,7 +73,7 @@ def collect(
 
     try:
         result = _SOURCE_FUNCS[source](**kwargs)
-    except (KeyError, ValueError, FileNotFoundError, OSError, paramiko.SSHException) as exc:
+    except (KeyError, ValueError, FileNotFoundError, PermissionError, OSError, paramiko.SSHException) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
@@ -81,7 +89,10 @@ def investigate(
     """Ask Claude to investigate an incident on a host and produce an RCA report."""
     try:
         result = run_investigation(host, question, max_iterations=max_iterations)
-    except (KeyError, ValueError, FileNotFoundError, OSError, paramiko.SSHException, RuntimeError) as exc:
+    except (
+        KeyError, ValueError, FileNotFoundError, PermissionError,
+        OSError, paramiko.SSHException, RuntimeError,
+    ) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 

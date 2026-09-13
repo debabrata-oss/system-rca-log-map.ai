@@ -1,12 +1,10 @@
-import logging
 from dataclasses import dataclass
 
 import paramiko
 
+from rca_log_map import audit
 from rca_log_map.config import HostConfig
 from rca_log_map.controller.commands import COMMAND_REGISTRY
-
-logger = logging.getLogger(__name__)
 
 CONNECT_TIMEOUT_SECONDS = 10
 COMMAND_TIMEOUT_SECONDS = 30
@@ -65,14 +63,17 @@ class SSHController:
             raise KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY")
 
         spec = COMMAND_REGISTRY[command_name]
-        rendered = spec.render(**params)
+        try:
+            rendered = spec.render(**params)
+        except ValueError as exc:
+            # Defense in depth: log_tools._run() already validates before connecting,
+            # but audit this too in case SSHController is ever called directly.
+            audit.record_event(
+                host=self.host_alias, command_name=command_name, command=None,
+                exit_status=None, error=str(exc),
+            )
+            raise
 
-        logger.info(
-            "executing command_name=%s host=%s rendered=%r",
-            command_name,
-            self.host_alias,
-            rendered,
-        )
         _, stdout, stderr = self._client.exec_command(rendered, timeout=COMMAND_TIMEOUT_SECONDS)
         exit_status = stdout.channel.recv_exit_status()
         result = CommandResult(
@@ -81,10 +82,8 @@ class SSHController:
             stderr=_read_capped(stderr),
             exit_status=exit_status,
         )
-        logger.info(
-            "completed command_name=%s host=%s exit_status=%d",
-            command_name,
-            self.host_alias,
-            exit_status,
+        audit.record_event(
+            host=self.host_alias, command_name=command_name, command=rendered,
+            exit_status=exit_status,
         )
         return result

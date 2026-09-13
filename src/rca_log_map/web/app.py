@@ -3,10 +3,11 @@ from pathlib import Path
 
 import paramiko
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from rca_log_map import audit
 from rca_log_map.config import load_hosts
 from rca_log_map.rca.agent import investigate as run_investigation
 from rca_log_map.rca.schemas import InvestigationResult
@@ -15,6 +16,13 @@ from rca_log_map.web.auth import API_KEY_ENV_VAR, require_api_key
 STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="rca-log-map")
+
+
+@app.middleware("http")
+async def set_actor_middleware(request: Request, call_next):
+    client_host = request.client.host if request.client else "unknown"
+    audit.set_actor(f"web:{client_host}")
+    return await call_next(request)
 
 
 class InvestigateRequest(BaseModel):
@@ -36,7 +44,10 @@ def api_hosts() -> list[dict]:
 def api_investigate(body: InvestigateRequest) -> InvestigationResult:
     try:
         return run_investigation(body.host, body.question, max_iterations=body.max_iterations)
-    except (KeyError, ValueError, FileNotFoundError, OSError, paramiko.SSHException, RuntimeError) as exc:
+    except (
+        KeyError, ValueError, FileNotFoundError, PermissionError,
+        OSError, paramiko.SSHException, RuntimeError,
+    ) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
