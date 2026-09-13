@@ -95,6 +95,30 @@ def _crictl_logs(container_id: str, lines: int = 200, previous: bool = False) ->
     return f"crictl logs --tail {lines}{flag} {container_id}"
 
 
+def _pcs_status() -> str:
+    return "pcs status"
+
+
+def _crm_mon_status() -> str:
+    return "crm_mon -1"
+
+
+def _pacemaker_log(lines: int = 200) -> str:
+    lines = validate_lines(lines)
+    return f"tail -n {lines} /var/log/pacemaker/pacemaker.log"
+
+
+def _corosync_log(lines: int = 200) -> str:
+    lines = validate_lines(lines)
+    return f"tail -n {lines} /var/log/cluster/corosync.log"
+
+
+def _journalctl_ha_cluster(since: str = "1 hour ago", lines: int = 200) -> str:
+    since = validate_since(since)
+    lines = validate_lines(lines)
+    return f'journalctl -u pacemaker -u corosync --since "{since}" --no-pager -n {lines}'
+
+
 COMMAND_REGISTRY: dict[str, CommandSpec] = {
     "journalctl_recent_errors": CommandSpec(
         description="Most recent systemd journal entries with error context (journalctl -xe).",
@@ -147,5 +171,25 @@ COMMAND_REGISTRY: dict[str, CommandSpec] = {
     "crictl_logs": CommandSpec(
         description="Container runtime logs for a specific container ID (crictl logs).",
         render=_crictl_logs,
+    ),
+    "pcs_status": CommandSpec(
+        description="Pacemaker/Corosync resource, node, and quorum state (pcs status).",
+        render=_pcs_status,
+    ),
+    "crm_mon_status": CommandSpec(
+        description="Pacemaker/Corosync resource, node, and quorum state (crm_mon -1).",
+        render=_crm_mon_status,
+    ),
+    "pacemaker_log": CommandSpec(
+        description="Resource start/stop/failover and fencing events from /var/log/pacemaker/pacemaker.log.",
+        render=_pacemaker_log,
+    ),
+    "corosync_log": CommandSpec(
+        description="Membership, quorum, and split-brain events from /var/log/cluster/corosync.log.",
+        render=_corosync_log,
+    ),
+    "journalctl_ha_cluster": CommandSpec(
+        description="Combined pacemaker + corosync timeline (journalctl -u pacemaker -u corosync).",
+        render=_journalctl_ha_cluster,
     ),
 }

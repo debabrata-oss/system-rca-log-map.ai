@@ -18,6 +18,11 @@ def test_all_standalone_sources_registered():
         "sar_stats",
         "crictl_ps",
         "crictl_logs",
+        "pcs_status",
+        "crm_mon_status",
+        "pacemaker_log",
+        "corosync_log",
+        "journalctl_ha_cluster",
     }
     assert expected == set(COMMAND_REGISTRY)
 
@@ -84,3 +89,33 @@ def test_crictl_logs_rejects_bad_container_id():
     spec = COMMAND_REGISTRY["crictl_logs"]
     with pytest.raises(ValueError):
         spec.render(container_id="abc; rm -rf /", lines=50)
+
+
+def test_pcs_status_renders_expected_command():
+    assert COMMAND_REGISTRY["pcs_status"].render() == "pcs status"
+
+
+def test_crm_mon_status_renders_expected_command():
+    assert COMMAND_REGISTRY["crm_mon_status"].render() == "crm_mon -1"
+
+
+def test_pacemaker_log_renders_expected_command():
+    spec = COMMAND_REGISTRY["pacemaker_log"]
+    assert spec.render(lines=50) == "tail -n 50 /var/log/pacemaker/pacemaker.log"
+
+
+def test_corosync_log_renders_expected_command():
+    spec = COMMAND_REGISTRY["corosync_log"]
+    assert spec.render(lines=50) == "tail -n 50 /var/log/cluster/corosync.log"
+
+
+def test_journalctl_ha_cluster_renders_expected_command():
+    spec = COMMAND_REGISTRY["journalctl_ha_cluster"]
+    cmd = spec.render(since="2 hours ago", lines=100)
+    assert cmd == 'journalctl -u pacemaker -u corosync --since "2 hours ago" --no-pager -n 100'
+
+
+def test_journalctl_ha_cluster_rejects_since_injection():
+    spec = COMMAND_REGISTRY["journalctl_ha_cluster"]
+    with pytest.raises(ValueError):
+        spec.render(since="1 hour ago; reboot")

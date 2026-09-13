@@ -57,6 +57,17 @@ _PARAM_SCHEMAS: dict[str, dict[str, Any]] = {
         "lines": LINES_PROPERTY,
         "previous": {"type": "boolean", "description": "Logs from a previous crashed instance."},
     },
+    "pcs_status": {},
+    "crm_mon_status": {},
+    "pacemaker_log": {"lines": LINES_PROPERTY},
+    "corosync_log": {"lines": LINES_PROPERTY},
+    "journalctl_ha_cluster": {
+        "since": {
+            "type": "string",
+            "description": "Time window, e.g. '2 hours ago', 'today', or 'YYYY-MM-DD [HH:MM[:SS]]'.",
+        },
+        "lines": LINES_PROPERTY,
+    },
 }
 
 _REQUIRED_PARAMS: dict[str, list[str]] = {

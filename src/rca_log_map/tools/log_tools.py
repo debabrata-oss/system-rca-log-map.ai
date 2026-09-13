@@ -103,6 +103,31 @@ def crictl_logs(host: str, container_id: str, lines: int = 200, previous: bool =
     return _run(host, "crictl_logs", container_id=container_id, lines=lines, previous=previous)
 
 
+def pcs_status(host: str) -> str:
+    """Pacemaker/Corosync resource, node, and quorum state via pcs status."""
+    return _run(host, "pcs_status")
+
+
+def crm_mon_status(host: str) -> str:
+    """Pacemaker/Corosync resource, node, and quorum state via crm_mon -1."""
+    return _run(host, "crm_mon_status")
+
+
+def pacemaker_log(host: str, lines: int = 200) -> str:
+    """Resource start/stop/failover and fencing events from /var/log/pacemaker/pacemaker.log."""
+    return _run(host, "pacemaker_log", lines=lines)
+
+
+def corosync_log(host: str, lines: int = 200) -> str:
+    """Membership, quorum, and split-brain events from /var/log/cluster/corosync.log."""
+    return _run(host, "corosync_log", lines=lines)
+
+
+def journalctl_ha_cluster(host: str, since: str = "1 hour ago", lines: int = 200) -> str:
+    """Combined pacemaker + corosync timeline via journalctl -u pacemaker -u corosync."""
+    return _run(host, "journalctl_ha_cluster", since=since, lines=lines)
+
+
 ALL_TOOLS = (
     journalctl_recent_errors,
     journalctl_boot,
@@ -117,4 +142,9 @@ ALL_TOOLS = (
     sar_stats,
     crictl_ps,
     crictl_logs,
+    pcs_status,
+    crm_mon_status,
+    pacemaker_log,
+    corosync_log,
+    journalctl_ha_cluster,
 )
