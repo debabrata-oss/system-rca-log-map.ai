@@ -2,7 +2,7 @@
 
 Live server introspection and post-incident root-cause-analysis log collection, exposed as MCP tools with a CLI and web UI on top.
 
-See [`PLAN.md`](PLAN.md) for the original idea and log-source reference, and [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased build plan.
+See [`PLAN.md`](PLAN.md) for the original idea and log-source reference, [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased build plan, and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for an end-to-end flow diagram (request flow + deployment pipeline).
 
 ## Status
 
