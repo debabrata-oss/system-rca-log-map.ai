@@ -1,4 +1,5 @@
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from rca_log_map.controller.commands import COMMAND_REGISTRY
 from rca_log_map.tools import log_tools

@@ -4,12 +4,8 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, Field
 
-DEFAULT_CONFIG_PATH = Path(
-    os.environ.get("RCA_HOSTS_CONFIG", Path(__file__).parents[2] / "config" / "hosts.yaml")
-)
-DEFAULT_CLUSTERS_CONFIG_PATH = Path(
-    os.environ.get("RCA_CLUSTERS_CONFIG", Path(__file__).parents[2] / "config" / "clusters.yaml")
-)
+DEFAULT_HOSTS_CONFIG_PATH = "config/hosts.yaml"
+DEFAULT_CLUSTERS_CONFIG_PATH = "config/clusters.yaml"
 
 
 class HostConfig(BaseModel):
@@ -24,7 +20,7 @@ class HostConfig(BaseModel):
 
 
 def load_hosts(config_path: Path | None = None) -> dict[str, HostConfig]:
-    path = config_path or DEFAULT_CONFIG_PATH
+    path = config_path or Path(os.environ.get("RCA_HOSTS_CONFIG", DEFAULT_HOSTS_CONFIG_PATH))
     if not path.exists():
         raise FileNotFoundError(
             f"Host inventory not found at {path}. Copy config/hosts.example.yaml to "
@@ -54,7 +50,7 @@ class ClusterConfig(BaseModel):
 
 
 def load_clusters(config_path: Path | None = None) -> dict[str, ClusterConfig]:
-    path = config_path or DEFAULT_CLUSTERS_CONFIG_PATH
+    path = config_path or Path(os.environ.get("RCA_CLUSTERS_CONFIG", DEFAULT_CLUSTERS_CONFIG_PATH))
     if not path.exists():
         raise FileNotFoundError(
             f"Cluster inventory not found at {path}. Copy config/clusters.example.yaml to "

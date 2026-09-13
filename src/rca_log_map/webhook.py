@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -65,12 +65,12 @@ def _reports_dir() -> Path:
 
 
 def _save_report(alert: AlertPayload, outcome: dict) -> Path:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
     safe_host = _safe_filename_component(alert.host)
     path = _reports_dir() / f"{timestamp}_{safe_host}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     record = {
-        "triggered_at": datetime.now(timezone.utc).isoformat(),
+        "triggered_at": datetime.now(UTC).isoformat(),
         "alert": alert.model_dump(),
         **outcome,
     }

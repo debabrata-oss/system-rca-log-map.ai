@@ -110,7 +110,7 @@ def k8s_collect(
     cluster: str = typer.Option(..., help="Cluster alias from config/clusters.yaml."),
     source: str = typer.Option(..., help="Log source name; see `rca list-k8s-sources`."),
     pod: str = typer.Option(None, help="Pod name (k8s_describe_pod, k8s_pod_logs)."),
-    namespace: str = typer.Option(None, help="Namespace, default 'default' (k8s_describe_pod, k8s_pod_logs)."),
+    namespace: str = typer.Option(None, help="Namespace, default 'default' (describe_pod/pod_logs)."),
     container: str = typer.Option(None, help="Container name (k8s_pod_logs only)."),
     previous: bool = typer.Option(False, help="Previous crashed instance's logs (k8s_pod_logs only)."),
     lines: int = typer.Option(None, help="Number of lines to return (k8s_pod_logs only)."),
@@ -134,7 +134,10 @@ def k8s_collect(
 
     try:
         result = _K8S_SOURCE_FUNCS[source](**kwargs)
-    except (KeyError, ValueError, FileNotFoundError, PermissionError, OSError, subprocess.SubprocessError) as exc:
+    except (
+        KeyError, ValueError, FileNotFoundError, PermissionError,
+        OSError, subprocess.SubprocessError,
+    ) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 

@@ -1,0 +1,13 @@
+# Copy, fill in with real `ssh-keyscan <host>` output for every target host/node,
+# and `kubectl apply -f` this BEFORE `kubectl apply -k deploy/k8s/base`.
+# Public host keys only -- not sensitive, hence a ConfigMap rather than a Secret.
+# SSHController uses paramiko.RejectPolicy(), so a host missing here means every
+# SSH connection to it fails closed.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rca-known-hosts
+  namespace: rca-log-map
+data:
+  known_hosts: |
+    web1.example.internal ssh-ed25519 AAAA...

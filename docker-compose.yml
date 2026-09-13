@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    image: rca-log-map:local
+    env_file: .env
+    environment:
+      RCA_HOSTS_CONFIG: /etc/rca/config/hosts.yaml
+      RCA_CLUSTERS_CONFIG: /etc/rca/config/clusters.yaml
+    ports:
+      - "${RCA_WEB_PORT:-8000}:8000"
+    volumes:
+      - ./config:/etc/rca/config:ro
+      - ~/.ssh:/home/rca/.ssh:ro

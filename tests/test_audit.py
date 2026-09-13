@@ -26,7 +26,10 @@ def test_record_event_writes_jsonl(tmp_path, monkeypatch):
     monkeypatch.setenv("RCA_AUDIT_LOG_PATH", str(log_path))
     audit.set_actor("alice")
 
-    audit.record_event(host="web1", command_name="system_messages", command="tail -n 200 /var/log/messages", exit_status=0)
+    audit.record_event(
+        host="web1", command_name="system_messages",
+        command="tail -n 200 /var/log/messages", exit_status=0,
+    )
 
     lines = log_path.read_text().strip().splitlines()
     assert len(lines) == 1

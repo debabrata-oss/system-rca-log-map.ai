@@ -32,6 +32,11 @@ class InvestigateRequest(BaseModel):
     max_iterations: int = 6
 
 
+@app.get("/healthz")
+def healthz() -> dict:
+    return {"status": "ok"}
+
+
 @app.get("/api/hosts", dependencies=[Depends(require_api_key)])
 def api_hosts() -> list[dict]:
     try:

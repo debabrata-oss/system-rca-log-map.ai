@@ -112,7 +112,9 @@ def test_validate_k8s_name_accepts_valid_names(value):
     assert validate_k8s_name(value, "pod") == value
 
 
-@pytest.mark.parametrize("value", ["", "Web1", "-leading-hyphen", "trailing-hyphen-", "pod; rm -rf /", "a" * 254])
+@pytest.mark.parametrize(
+    "value", ["", "Web1", "-leading-hyphen", "trailing-hyphen-", "pod; rm -rf /", "a" * 254]
+)
 def test_validate_k8s_name_rejects_invalid_names(value):
     with pytest.raises(ValueError):
         validate_k8s_name(value, "pod")

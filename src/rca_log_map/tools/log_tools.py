@@ -6,7 +6,8 @@ from rca_log_map.controller.ssh_controller import SSHController
 
 def _run(host: str, command_name: str, **params) -> str:
     if command_name not in COMMAND_REGISTRY:
-        audit.reject(host, command_name, KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY"))
+        error = KeyError(f"Unknown command {command_name!r}; not in COMMAND_REGISTRY")
+        audit.reject(host, command_name, error)
 
     try:
         host_config = get_host(host)

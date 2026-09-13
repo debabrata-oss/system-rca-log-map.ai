@@ -1,0 +1,20 @@
+# Example only -- adapt `ingressClassName`, host, and TLS to your cluster's
+# actual ingress controller before applying. Not referenced by kustomization.yaml.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rca-web
+  namespace: rca-log-map
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rca-log-map.example.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rca-web
+                port:
+                  number: 8000

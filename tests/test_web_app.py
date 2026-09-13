@@ -28,6 +28,12 @@ FAKE_RESULT = InvestigationResult(
 )
 
 
+def test_healthz_requires_no_api_key():
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_hosts_requires_api_key(monkeypatch):
     monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
     response = client.get("/api/hosts")

@@ -29,7 +29,8 @@ def _scripted_client(responses: list, seen_calls: list) -> MagicMock:
     remaining = list(responses)
 
     def fake_create(**kwargs):
-        seen_calls.append(copy.deepcopy({"messages": kwargs["messages"], "tool_choice": kwargs["tool_choice"]}))
+        snapshot = {"messages": kwargs["messages"], "tool_choice": kwargs["tool_choice"]}
+        seen_calls.append(copy.deepcopy(snapshot))
         return remaining.pop(0)
 
     client.messages.create.side_effect = fake_create

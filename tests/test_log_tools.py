@@ -29,7 +29,9 @@ def test_unknown_command_rejected_before_any_connection(mock_ssh_controller_cls,
 @patch("rca_log_map.audit.record_event")
 @patch("rca_log_map.tools.log_tools.SSHController")
 @patch("rca_log_map.tools.log_tools.get_host", side_effect=KeyError("unknown host alias 'nope'"))
-def test_unknown_host_rejected_before_any_connection(mock_get_host, mock_ssh_controller_cls, mock_record_event):
+def test_unknown_host_rejected_before_any_connection(
+    mock_get_host, mock_ssh_controller_cls, mock_record_event
+):
     with pytest.raises(KeyError):
         log_tools._run("nope", "system_messages")
 
@@ -40,7 +42,9 @@ def test_unknown_host_rejected_before_any_connection(mock_get_host, mock_ssh_con
 @patch("rca_log_map.audit.record_event")
 @patch("rca_log_map.tools.log_tools.SSHController")
 @patch("rca_log_map.tools.log_tools.get_host", return_value=RESTRICTED_HOST_CONFIG)
-def test_policy_denied_source_rejected_before_any_connection(mock_get_host, mock_ssh_controller_cls, mock_record_event):
+def test_policy_denied_source_rejected_before_any_connection(
+    mock_get_host, mock_ssh_controller_cls, mock_record_event
+):
     with pytest.raises(PermissionError):
         log_tools._run("web1", "sar_stats")
 

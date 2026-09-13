@@ -81,8 +81,9 @@ def test_crictl_ps_renders_expected_command():
 
 def test_crictl_logs_renders_expected_command():
     spec = COMMAND_REGISTRY["crictl_logs"]
-    assert spec.render(container_id="a" * 12, lines=50) == f"crictl logs --tail 50 {'a' * 12}"
-    assert spec.render(container_id="a" * 12, lines=50, previous=True) == f"crictl logs --tail 50 -p {'a' * 12}"
+    cid = "a" * 12
+    assert spec.render(container_id=cid, lines=50) == f"crictl logs --tail 50 {cid}"
+    assert spec.render(container_id=cid, lines=50, previous=True) == f"crictl logs --tail 50 -p {cid}"
 
 
 def test_crictl_logs_rejects_bad_container_id():

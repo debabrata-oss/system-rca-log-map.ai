@@ -6,7 +6,8 @@ from rca_log_map.controller.kubectl_controller import KubectlController
 
 def _run(cluster: str, command_name: str, **params) -> str:
     if command_name not in KUBECTL_COMMAND_REGISTRY:
-        audit.reject(cluster, command_name, KeyError(f"Unknown command {command_name!r}; not in KUBECTL_COMMAND_REGISTRY"))
+        error = KeyError(f"Unknown command {command_name!r}; not in KUBECTL_COMMAND_REGISTRY")
+        audit.reject(cluster, command_name, error)
 
     try:
         cluster_config = get_cluster(cluster)

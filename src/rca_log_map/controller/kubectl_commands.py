@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from rca_log_map.controller.validation import validate_k8s_name, validate_lines
 

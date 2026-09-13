@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def record_event(
     error: str | None = None,
 ) -> None:
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "actor": current_actor(),
         "host": host,
         "command_name": command_name,

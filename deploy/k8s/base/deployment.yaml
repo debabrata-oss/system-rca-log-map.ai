@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rca-web
+  namespace: rca-log-map
+  labels:
+    app: rca-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rca-web
+  template:
+    metadata:
+      labels:
+        app: rca-web
+    spec:
+      # The app talks to Kubernetes clusters (for k8s log-collection tools) via
+      # an explicitly mounted kubeconfig, never this pod's own identity -- no
+      # need to auto-mount a ServiceAccount token it will never use.
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000 # so the emptyDir volumes below are writable by the non-root container user
+      containers:
+        - name: rca-web
+          # Replace with your registry/tag if not using CI's ghcr.io publish.
+          image: ghcr.io/debabrata-oss/system-rca-log-map.ai:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: RCA_HOSTS_CONFIG
+              value: /etc/rca/config/hosts.yaml
+            - name: RCA_CLUSTERS_CONFIG
+              value: /etc/rca/config/clusters.yaml
+            - name: RCA_WEB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rca-secrets
+                  key: RCA_WEB_API_KEY
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rca-secrets
+                  key: ANTHROPIC_API_KEY
+          volumeMounts:
+            - name: config
+              mountPath: /etc/rca/config
+              readOnly: true
+            - name: known-hosts
+              mountPath: /home/rca/.ssh/known_hosts
+              subPath: known_hosts
+              readOnly: true
+            - name: logs
+              mountPath: /app/logs
+            - name: reports
+              mountPath: /app/reports
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: config
+          secret:
+            secretName: rca-config
+        - name: known-hosts
+          configMap:
+            name: rca-known-hosts
+        - name: logs
+          emptyDir: {}
+        - name: reports
+          emptyDir: {}
