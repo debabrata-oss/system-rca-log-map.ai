@@ -3,6 +3,7 @@ import typer
 
 from rca_log_map.config import load_hosts
 from rca_log_map.controller.commands import COMMAND_REGISTRY
+from rca_log_map.rca.agent import investigate as run_investigation
 from rca_log_map.tools import log_tools
 
 app = typer.Typer(help="rca: collect and analyze Linux host/cluster logs for RCA.")
@@ -69,6 +70,32 @@ def collect(
         raise typer.Exit(code=1) from exc
 
     typer.echo(result)
+
+
+@app.command()
+def investigate(
+    host: str = typer.Option(..., help="Host alias from config/hosts.yaml."),
+    question: str = typer.Option(..., help="Plain-language description of the incident to investigate."),
+    max_iterations: int = typer.Option(6, help="Max Claude tool-use turns before forcing a final report."),
+) -> None:
+    """Ask Claude to investigate an incident on a host and produce an RCA report."""
+    try:
+        report = run_investigation(host, question, max_iterations=max_iterations)
+    except (KeyError, ValueError, FileNotFoundError, OSError, paramiko.SSHException, RuntimeError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+    typer.echo(f"Host: {report.host}")
+    typer.echo(f"Summary: {report.summary}")
+    typer.echo(f"Likely root cause: {report.likely_root_cause}")
+    typer.echo(f"Confidence: {report.confidence}")
+    typer.echo("Evidence:")
+    for item in report.evidence:
+        typer.echo(f"  - {item}")
+    typer.echo("Recommended actions:")
+    for item in report.recommended_actions:
+        typer.echo(f"  - {item}")
+    typer.echo(f"Tools used: {', '.join(report.tools_used) or '(none)'}")
 
 
 if __name__ == "__main__":
