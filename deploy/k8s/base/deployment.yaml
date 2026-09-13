@@ -19,6 +19,12 @@ spec:
       # an explicitly mounted kubeconfig, never this pod's own identity -- no
       # need to auto-mount a ServiceAccount token it will never use.
       automountServiceAccountToken: false
+      # Kubernetes auto-injects legacy Docker-links-style env vars for every
+      # Service in the namespace as <SVCNAME>_PORT etc. Since the Service here
+      # is named "rca-web", that collides with and overrides this app's own
+      # RCA_WEB_PORT env var (crashes on startup: "invalid literal for int()
+      # with base 10: 'tcp://...'"). Disable the legacy injection entirely.
+      enableServiceLinks: false
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
