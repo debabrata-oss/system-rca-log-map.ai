@@ -1,0 +1,9 @@
+# Copy this file to config/hosts.yaml and fill in your real hosts.
+# config/hosts.yaml is gitignored -- it is the host allowlist and may
+# reference private key paths, so it should never be committed.
+hosts:
+  web1:
+    hostname: 10.0.1.23
+    port: 22
+    username: rca-svc
+    key_path: ~/.ssh/rca_svc_ed25519
