@@ -11,3 +11,4 @@ build/
 config/hosts.yaml
 config/clusters.yaml
 logs/
+reports/

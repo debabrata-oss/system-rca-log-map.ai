@@ -99,3 +99,55 @@ def test_require_api_key_raises_when_env_var_unset(monkeypatch):
         assert False, "expected RuntimeError"
     except RuntimeError as exc:
         assert API_KEY_ENV_VAR in str(exc)
+
+
+def test_webhook_requires_api_key(monkeypatch):
+    monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
+    response = client.post("/webhook/alert", json={"host": "web1", "reason": "x"})
+    assert response.status_code == 401
+
+
+def test_webhook_accepts_query_param_key(monkeypatch):
+    monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
+    with patch("rca_log_map.web.app.run_triggered_investigation"):
+        response = client.post(
+            "/webhook/alert?api_key=secret", json={"host": "web1", "reason": "x"}
+        )
+    assert response.status_code == 202
+
+
+def test_webhook_generic_payload_schedules_one_investigation(monkeypatch):
+    monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
+    with patch("rca_log_map.web.app.run_triggered_investigation") as mock_run:
+        response = client.post(
+            "/webhook/alert",
+            headers={"X-API-Key": "secret"},
+            json={"host": "web1", "reason": "disk full"},
+        )
+    assert response.status_code == 202
+    assert response.json() == {"accepted": 1}
+    mock_run.assert_called_once()
+    assert mock_run.call_args.args[0].host == "web1"
+
+
+def test_webhook_alertmanager_payload_schedules_one_per_host(monkeypatch):
+    monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
+    body = {
+        "alerts": [
+            {"status": "firing", "labels": {"instance": "web1"}, "annotations": {"summary": "a"}},
+            {"status": "firing", "labels": {"instance": "web2"}, "annotations": {"summary": "b"}},
+        ]
+    }
+    with patch("rca_log_map.web.app.run_triggered_investigation") as mock_run:
+        response = client.post("/webhook/alert", headers={"X-API-Key": "secret"}, json=body)
+    assert response.status_code == 202
+    assert response.json() == {"accepted": 2}
+    assert mock_run.call_count == 2
+
+
+def test_webhook_invalid_payload_returns_400_not_500(monkeypatch):
+    monkeypatch.setenv(API_KEY_ENV_VAR, "secret")
+    response = client.post(
+        "/webhook/alert", headers={"X-API-Key": "secret"}, json={"reason": "missing host"}
+    )
+    assert response.status_code == 400
